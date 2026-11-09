@@ -1,0 +1,508 @@
+<title>Tone &amp; Sculpt Split</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@600;700&family=DM+Mono:wght@500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap">
+<style>
+/* Layout: sticky 3D stage (top on phone, left on desktop); week strip of day tiles, then day-grouped checklist with warm-up notes */
+:root{
+  --bg:#f3eff1; --surface:#ffffff; --ink:#1d1619; --muted:#6c5f66; --line:#e1d7dc;
+  --accent:#a8325c; --accent-soft:#f7e3ea; --stage:#efe6ea; --stage-2:#cdbcc4;
+  --done:#2f7d5b; --on-done:#ffffff;
+  --f-display:"Archivo Narrow","Arial Narrow",sans-serif;
+  --f-body:"DM Sans",system-ui,-apple-system,sans-serif;
+  --f-mono:"DM Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141013; --surface:#1d171b; --ink:#f0e8ec; --muted:#a8989f; --line:#30272c;
+  --accent:#f088ad; --accent-soft:#3a1f2b; --stage:#2a2026; --stage-2:#0f0b0d;
+  --done:#5fc995; --on-done:#0a1610; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141013; --surface:#1d171b; --ink:#f0e8ec; --muted:#a8989f; --line:#30272c;
+  --accent:#f088ad; --accent-soft:#3a1f2b; --stage:#2a2026; --stage-2:#0f0b0d;
+  --done:#5fc995; --on-done:#0a1610; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 40px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.app{display:grid;gap:18px;max-width:1180px;margin:0 auto}
+.stage{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;height:clamp(260px,46vh,480px);border-radius:18px;overflow:hidden;
+  background:radial-gradient(110% 85% at 50% 30%,var(--stage),var(--stage-2));border:1px solid var(--line)}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:pan-y;cursor:grab;display:block}
+.cap{position:absolute;left:16px;bottom:14px;right:70px;pointer-events:none;display:grid;gap:2px}
+.eb{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.cap h2{margin:0;font-family:var(--f-display);font-weight:700;font-size:clamp(24px,5vw,36px);line-height:1;text-transform:uppercase;text-wrap:balance}
+.cap .sr{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.cap .why{font-size:13px;color:var(--muted)}
+.cap .cue{font-size:13px;font-weight:600;color:var(--ink);max-width:46ch}
+.tools{position:absolute;right:10px;top:10px;display:flex;gap:6px;align-items:center}
+.hint{font-size:11px;color:var(--muted);padding:4px 8px}
+.iconbtn{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 13px var(--f-body);cursor:pointer}
+.load{position:absolute;left:12px;top:12px;margin:0;padding:6px 10px;border-radius:99px;background:var(--surface);border:1px solid var(--line);font:500 12px var(--f-mono);color:var(--muted)}
+.msg{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);padding:20px;text-align:center}
+@media (min-width:880px){
+  .app{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:28px;align-items:start}
+  .stage{top:calc(env(safe-area-inset-top,0px) + 12px);height:calc(100vh - 52px);max-height:780px}
+}
+header{display:grid;gap:10px;padding-top:4px}
+h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:46px;line-height:.95;text-transform:uppercase;letter-spacing:.01em}
+.sub{margin:0;color:var(--muted)}
+.week{display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center}
+.meter{grid-column:1/-1;height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--done);transition:width .3s}
+#prog{font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums}
+.ghost{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:6px 12px;font:500 13px var(--f-body);cursor:pointer}
+.ghost.arm{border-color:var(--accent);color:var(--accent)}
+.tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:18px 0 10px}
+.tile{display:grid;justify-items:center;gap:2px;padding:10px 4px 8px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);cursor:pointer;font:inherit;min-width:0}
+.tile[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft)}
+.tile.rest{border-style:dashed}
+.tile svg{width:44px;height:44px;transform:rotate(-90deg)}
+.tile .trk{stroke:var(--line)} .tile .val{stroke:var(--done);transition:stroke-dashoffset .3s}
+.tile b{font-family:var(--f-display);font-size:17px;line-height:1;text-transform:uppercase;font-weight:700;text-align:center}
+.tile small{font-family:var(--f-mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+#q{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:15px var(--f-body)}
+.filt{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:8px;font-size:13px;color:var(--muted);min-height:30px}
+.day{margin-top:18px}
+.dh{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding-bottom:8px;border-bottom:2px solid var(--ink)}
+.dt{display:grid;min-width:0}
+.dt h3{margin:0;font-family:var(--f-display);font-weight:700;font-size:25px;line-height:1;text-transform:uppercase;text-wrap:balance}
+.cnt{font-family:var(--f-mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.warm{margin:8px 0 2px;font-size:13px;color:var(--muted)}
+.warm strong{font-family:var(--f-mono);font-weight:500;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-right:6px}
+ul{list-style:none;margin:0;padding:0}
+.row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center;padding:4px 6px;border-bottom:1px solid var(--line);border-radius:8px}
+.row.sel{background:var(--accent-soft)}
+.ex{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:baseline;min-width:0;width:100%;text-align:left;border:0;background:none;color:inherit;padding:9px 0;font:inherit;cursor:pointer}
+.nm{font-weight:500;min-width:0}
+.ex .why{grid-column:1/-1;font-size:12.5px;color:var(--muted)}
+.sel .nm{color:var(--accent)}
+.done .nm{color:var(--muted);text-decoration:line-through;text-decoration-thickness:1px}
+.ex .sr{font-family:var(--f-mono);font-size:13px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+input[type=checkbox],.dcheck{appearance:none;-webkit-appearance:none;margin:0;width:24px;height:24px;border:2px solid var(--muted);border-radius:6px;
+  background:var(--surface);display:grid;place-content:center;cursor:pointer;padding:0}
+.dcheck{width:30px;height:30px;border-radius:50%}
+input[type=checkbox]::after,.dcheck::after{content:"";width:6px;height:11px;border:solid var(--on-done);border-width:0 2.5px 2.5px 0;transform:rotate(45deg) scale(0);margin-top:-3px;transition:transform .15s}
+input:checked,.dcheck[aria-pressed="true"]{background:var(--done);border-color:var(--done)}
+input:checked::after,.dcheck[aria-pressed="true"]::after{transform:rotate(45deg) scale(1)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.empty{color:var(--muted);margin-top:24px}
+@media (max-width:400px){.tile svg{width:36px;height:36px}.tile b{font-size:14px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="app">
+  <section class="stage" id="stage" aria-label="3D exercise demo">
+    <canvas id="cv"></canvas>
+    <div class="tools"><span class="hint">Drag to rotate</span><button class="iconbtn" id="play" aria-label="Pause animation">❚❚</button></div>
+    <p class="load" id="load">Loading 3D model…</p>
+    <div class="cap"><span class="eb" id="capDay"></span><h2 id="capName"></h2><span class="sr" id="capSets"></span><span class="why" id="capWhy"></span><span class="cue" id="capCue"></span></div>
+  </section>
+  <main>
+    <header>
+      <h1>Tone &amp; Sculpt</h1>
+      <p class="sub">Upper · Lower · Rest · Upper &amp; Core · Lower &amp; Core. Tap an exercise to watch it, tick it when your sets are done.</p>
+      <div class="week">
+        <span id="prog"></span>
+        <button class="ghost" id="reset">New week</button>
+        <div class="meter"><i id="bar"></i></div>
+      </div>
+    </header>
+    <div class="tiles" id="tiles" aria-label="Filter by day"></div>
+    <input id="q" type="search" placeholder="Filter exercises, e.g. curl" aria-label="Filter exercises" autocomplete="off">
+    <div class="filt"><span id="fl">Showing all days</span><button class="ghost" id="all" hidden>Show all days</button></div>
+    <div id="list"></div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
+<script>
+const DAYS=[
+ {n:1,name:'Upper Body',short:'Upper',focus:'Tone arms & back',warm:'5–10 min elliptical or treadmill, arm circles, dynamic stretches',ex:[
+  ['Dumbbell Shoulder Press','3 × 10–12','shoulderPress','Capped shoulders','Sit tall and press up without arching your lower back'],
+  ['Lat Pulldown','3 × 10–12','pulldown','Strong, defined upper back','Pull the bar to your upper chest, elbows down and back'],
+  ['Dumbbell Bicep Curl','3 × 12','curl','Front of the arms','Pin your elbows to your sides, no swinging'],
+  ['Tricep Cable Pushdown','3 × 12–15','pushdown','Firms the back of the arms','Elbows stay tucked, only your forearms move'],
+  ['Seated Cable Row','3 × 12','seatedRow','Mid back and posture','Chest up, squeeze your shoulder blades together'],
+  ['Plank','3 × 45 s hold','plank','Core stability. Move to forearms once this feels easy','Hands under shoulders, one straight line from head to heels']]},
+ {n:2,name:'Lower Body',short:'Lower',focus:'Glutes & legs',warm:'Bodyweight glute bridges 2 × 15, leg swings',ex:[
+  ['Goblet Squat','3 × 8–10','goblet','Overall lower body strength','Chest up, knees follow your toes, sit down between your heels'],
+  ['Romanian Deadlift','3 × 10–12','rdl','Hamstrings and glutes','Soft knees, push your hips back, keep your back flat'],
+  ['Bulgarian Split Squat','3 × 8 / leg','bss','Light dumbbells','Most of your weight on the front leg, drop straight down'],
+  ['Leg Press','3 × 12','legPress','Quads and glutes','Lower with control and never lock your knees at the top'],
+  ['Hanging Knee Raise','3 × 10–12','kneeRaise','Lower abs','Lift your knees with your abs, no swinging']]},
+ {n:3,name:'Rest / Recovery',short:'Rest',focus:'Active recovery',warm:'Take the day off, or walk',ex:[
+  ['Brisk Walk','30 min','walk','Optional active recovery','Brisk pace: you can talk, but not sing']]},
+ {n:4,name:'Upper & Core',short:'Upper',focus:'Sculpting',warm:'5 min light cardio, arm stretches',ex:[
+  ['Dumbbell Lateral Raise','4 × 12–15','lateral','Wider shoulders, leaner-looking arms','Raise to shoulder height, lead with your elbows'],
+  ['Assisted Pull-Up','3 × 10','pullup','Or banded lat pulldown','Pull your chest to the bar, lower slowly'],
+  ['Incline Dumbbell Press','3 × 10–12','inclineDB','Upper chest','Lower to chest level with wrists over elbows'],
+  ['Hammer Curl','3 × 12','hammer','Lower bicep and forearm','Thumbs up, elbows still'],
+  ['Overhead DB Tricep Extension','3 × 12','ohDB','Back of the arms','Elbows point up, lower the weight behind your head'],
+  ['Cable Woodchopper','3 × 15 / side','chop','Obliques and waistline','Turn through your torso, arms stay long']]},
+ {n:5,name:'Lower & Core',short:'Lower',focus:'Core burn',warm:'Dynamic leg stretches',ex:[
+  ['Hip Thrust','4 × 10–12','hipThrust','Glutes','Chin tucked, squeeze your glutes hard at the top'],
+  ['Walking Lunge','3 × 12 steps / leg','lunge','With dumbbells','Back knee toward the floor, front knee over your ankle'],
+  ['Seated Leg Curl','3 × 12','hamCurl','Hamstrings','Pull your heels down and back, return slowly'],
+  ['Cable Crunch','3 × 15','crunch','Upper abs','Curl your ribs toward your hips, do not pull with your arms'],
+  ['Bicycle Crunch','3 × 20 total','bicycle','Obliques and abs','Slow and controlled, shoulder toward the opposite knee']]}
+];
+const BY={};DAYS.forEach(d=>d.ex.forEach((e,i)=>BY[`d${d.n}-${i}`]={day:d,name:e[0],sets:e[1],key:e[2],why:e[3],cue:e[4]}));
+const KEY='sculpt-split-done';
+let done={};try{done=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(done))}catch(e){}};
+let fDay=0,sel=Object.keys(BY).find(id=>!done[id])||'d1-0';
+const $=id=>document.getElementById(id), list=$('list'), q=$('q');
+const idsOf=d=>d.ex.map((_,i)=>`d${d.n}-${i}`);
+const C=2*Math.PI*18;
+
+$('tiles').onclick=e=>{const b=e.target.closest('.tile');if(!b)return;const n=+b.dataset.n;fDay=fDay===n?0:n;render();};
+$('all').onclick=()=>{fDay=0;render();};
+q.oninput=render;
+
+function render(){
+  $('tiles').innerHTML=DAYS.map(d=>{const ids=idsOf(d),n=ids.filter(id=>done[id]).length;
+    return `<button class="tile${d.n===3?' rest':''}" data-n="${d.n}" aria-pressed="${fDay===d.n}" aria-label="Day ${d.n} ${d.name}, ${n} of ${ids.length} done"><svg viewBox="0 0 44 44"><circle class="trk" cx="22" cy="22" r="18" fill="none" stroke-width="5"/><circle class="val" cx="22" cy="22" r="18" fill="none" stroke-width="5" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-n/ids.length)}"${n?'':' opacity="0"'}/></svg><small>Day ${d.n}</small><b>${d.short}</b><small>${n}/${ids.length}</small></button>`}).join('');
+  $('fl').textContent=fDay?`Showing Day ${fDay} · ${DAYS[fDay-1].name}`:'Showing all days';$('all').hidden=!fDay;
+  const s=q.value.trim().toLowerCase();let h='';
+  DAYS.forEach(d=>{
+    if(fDay&&fDay!==d.n)return;
+    const ids=idsOf(d), shown=ids.filter(id=>!s||BY[id].name.toLowerCase().includes(s));
+    if(!shown.length)return;
+    const n=ids.filter(id=>done[id]).length, full=n===ids.length;
+    h+=`<section class="day"><div class="dh"><button class="dcheck" data-day="${d.n}" aria-pressed="${full}" aria-label="Mark all of Day ${d.n} ${full?'not done':'done'}"></button><div class="dt"><span class="eb">Day ${d.n} · ${d.focus}</span><h3>${d.name}</h3></div><span class="cnt">${n}/${ids.length}</span></div>`;
+    h+=`<p class="warm"><strong>${d.n===3?'Plan':'Warm-up'}</strong>${d.warm}</p><ul>`;
+    shown.forEach(id=>{const e=BY[id];h+=`<li class="row${sel===id?' sel':''}${done[id]?' done':''}"><input type="checkbox" id="c-${id}" data-id="${id}"${done[id]?' checked':''} aria-label="Done: ${e.name}"><button class="ex" data-id="${id}"><span class="nm">${e.name}</span><span class="sr">${e.sets}</span><span class="why">${e.cue}</span></button></li>`;});
+    h+='</ul></section>';});
+  list.innerHTML=h||'<p class="empty">No exercises match that filter.</p>';
+  const tot=Object.keys(BY).length, c=Object.keys(BY).filter(id=>done[id]).length;
+  $('prog').textContent=`${c} / ${tot} done this week`;$('bar').style.width=(c/tot*100)+'%';
+}
+list.addEventListener('change',e=>{const id=e.target.dataset.id;if(!id)return;e.target.checked?done[id]=1:delete done[id];save();render();});
+list.addEventListener('click',e=>{
+  const ex=e.target.closest('.ex');if(ex){select(ex.dataset.id);return;}
+  const dc=e.target.closest('.dcheck');if(dc){const ids=idsOf(DAYS[dc.dataset.day-1]),full=ids.every(id=>done[id]);
+    ids.forEach(id=>full?delete done[id]:done[id]=1);save();render();}
+});
+let armT;$('reset').onclick=function(){
+  if(this.classList.contains('arm')){done={};save();render();clearTimeout(armT);this.classList.remove('arm');this.textContent='New week';return;}
+  this.classList.add('arm');this.textContent='Tap again to clear';armT=setTimeout(()=>{this.classList.remove('arm');this.textContent='New week';},3000);
+};
+function select(id){sel=id;const e=BY[id];
+  $('capDay').textContent=`Day ${e.day.n} · ${e.day.name}`;$('capName').textContent=e.name;$('capSets').textContent=e.sets;$('capWhy').textContent=e.why;$('capCue').textContent='Form: '+e.cue;
+  list.querySelectorAll('.row').forEach(r=>r.classList.toggle('sel',r.querySelector('.ex').dataset.id===id));
+  if(window.setAnim)setAnim(e.key);
+}
+render();select(sel);
+
+/* ---------- 3D athlete ---------- */
+if(!window.THREE){$('stage').insertAdjacentHTML('beforeend','<p class="msg">The 3D viewer could not load. Check your connection; the checklist still works.</p>');}
+else{
+const D=Math.PI/180, L=(a,b,s)=>a+(b-a)*s, V=(x,y,z)=>new THREE.Vector3(x,y,z), V2=(x,y)=>new THREE.Vector2(x,y);
+const cv=$('cv'), stage=$('stage');
+const R=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});R.setPixelRatio(Math.min(devicePixelRatio,2));
+THREE.ColorManagement.legacyMode=false;R.outputEncoding=THREE.sRGBEncoding;
+R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(32,1,.1,50);
+scene.add(new THREE.HemisphereLight(0xfff4f8,0x463c42,.75));
+const sun=new THREE.DirectionalLight(0xffffff,.85);sun.position.set(2.5,5,3.5);sun.castShadow=true;
+sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-2.6,right:2.6,top:3,bottom:-1,near:.5,far:14});sun.shadow.bias=-.0006;sun.shadow.radius=4;scene.add(sun);
+const rim=new THREE.DirectionalLight(0xffb3cc,.5);rim.position.set(-3,3,-4);scene.add(rim);
+const M=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.6},o));
+const skin=M(0xd9a887,{roughness:.5}), top=M(0xb2345e,{roughness:.7}), legg=M(0x262a33,{roughness:.75}), shoe=M(0xf4f2f3,{roughness:.6}), sole=M(0xb2345e),
+  hair=M(0x2e1d14,{roughness:.85}), steel=M(0x8c94a1,{metalness:.7,roughness:.3}), pad=M(0x2a2629,{roughness:.75}), iron=M(0x5b6170,{metalness:.35,roughness:.4}),
+  plateMat=M(0x6f8f86,{roughness:.55}), frameMat=M(0x47404a,{metalness:.5,roughness:.4}), matMat=M(0x7a6b9a,{roughness:.95});
+const topD=top.clone();topD.side=THREE.DoubleSide;const leggD=legg.clone();leggD.side=THREE.DoubleSide;
+const floor=new THREE.Mesh(new THREE.CircleGeometry(2.1,64),M(0x5a4f56,{roughness:.95}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+const ring=new THREE.Mesh(new THREE.RingGeometry(2.08,2.14,64),M(0xb2345e));ring.rotation.x=-Math.PI/2;ring.position.y=.002;scene.add(ring);
+
+const G=()=>new THREE.Group();
+const sph=(r,mat,sx=1,sy=1,sz=1)=>{const m=new THREE.Mesh(new THREE.SphereGeometry(r,24,18),mat);m.scale.set(sx,sy,sz);return m};
+function smooth(a,t){const x=Math.min(.9999,Math.max(0,t))*(a.length-1),i=Math.floor(x);let f=x-i;f=f*f*(3-2*f);return a[i]+(a[i+1]-a[i])*f}
+/* tapered, muscle-shaped segment hanging from its joint; radii sampled top→bottom */
+function seg(len,radii,mat,from=0,to=1,caps=true){const pts=[],N=20;
+  if(caps)pts.push(V2(0,-to*len-radii[radii.length-1]*.5));
+  for(let i=N;i>=0;i--){const t=from+(to-from)*i/N;pts.push(V2(smooth(radii,t),-t*len))}
+  if(caps)pts.push(V2(0,-from*len+radii[0]*.5));
+  return new THREE.Mesh(new THREE.LatheGeometry(pts,24),mat)}
+function limb(parent,pos,l1,l2,r1,r2,ball,mat){
+  const a=G();a.position.copy(pos);parent.add(a);a.add(ball,seg(l1,r1,mat));
+  const b=G();b.position.y=-l1;a.add(b);b.add(sph(r2[0]*.98,mat),seg(l2,r2,mat));const c=G();c.position.y=-l2;b.add(c);return[a,b,c]}
+
+const root=G();scene.add(root);
+root.add(sph(1,legg,.19,.13,.135));
+const spine=G();spine.position.y=.03;root.add(spine);
+/* hourglass torso: skin midriff, crop top over the chest, high-waist leggings band */
+const TP=[[-.04,.125],[.02,.118],[.1,.103],[.18,.112],[.26,.138],[.33,.155],[.39,.165],[.43,.165],[.48,.13],[.51,.06],[.52,0]];
+const tr=y=>{for(let i=1;i<TP.length;i++)if(y<=TP[i][0]){const f=(y-TP[i-1][0])/(TP[i][0]-TP[i-1][0]);return TP[i-1][1]+(TP[i][1]-TP[i-1][1])*f}return 0};
+const band=(y0,y1,add,mat)=>{const pts=[];for(let i=0;i<=14;i++){const y=y0+(y1-y0)*i/14;pts.push(V2(tr(y)+add,y))}const m=new THREE.Mesh(new THREE.LatheGeometry(pts,28),mat);m.scale.z=.66;return m};
+const torso=new THREE.Mesh(new THREE.LatheGeometry(TP.map(p=>V2(p[1],p[0])),28),skin);torso.scale.z=.66;spine.add(torso);
+spine.add(band(.25,.44,.006,topD),band(-.04,.06,.006,leggD));
+[-1,1].forEach(k=>{const b=sph(.064,top,1,.8,.6);b.position.set(k*.065,.345,.07);spine.add(b)});
+const neck=new THREE.Mesh(new THREE.CylinderGeometry(.036,.045,.12,16),skin);neck.position.y=.55;spine.add(neck);
+const head=G();head.position.y=.665;spine.add(head);
+head.add(sph(.092,skin,.9,1.12,1));
+const hc=new THREE.Mesh(new THREE.SphereGeometry(.097,24,16,0,Math.PI*2,0,Math.PI*.5),hair);hc.scale.set(.95,1.14,1.05);hc.position.set(0,.008,-.01);hc.rotation.x=-.25;head.add(hc);
+const back=sph(.09,hair,.93,1,.8);back.position.set(0,.0,-.03);head.add(back);
+const tie=new THREE.Mesh(new THREE.TorusGeometry(.024,.008,8,16),top);tie.position.set(0,.06,-.1);tie.rotation.x=1.1;head.add(tie);
+const pony=G();pony.position.set(0,.06,-.11);head.add(pony);
+const pt=seg(.2,[.03,.036,.03,.018,.006],hair);pony.add(pt);
+[-1,1].forEach(k=>{const e=sph(.015,skin);e.position.set(k*.083,-.005,0);head.add(e)});
+const nose=sph(.013,skin,1,1.4,1);nose.position.set(0,-.02,.09);head.add(nose);
+
+const ARM1=[.046,.048,.049,.045,.038,.035], ARM2=[.037,.039,.036,.03,.025,.024], LEG1=[.092,.095,.086,.075,.062,.05], LEG2=[.048,.057,.055,.042,.032,.029];
+const[shL,elL,handL]=limb(spine,V(.185,.43,0),.27,.25,ARM1,ARM2,sph(.056,skin,1,1.05,1),skin),[shR,elR,handR]=limb(spine,V(-.185,.43,0),.27,.25,ARM1,ARM2,sph(.056,skin,1,1.05,1),skin);
+shL.rotation.order=shR.rotation.order='ZXY';
+[handL,handR].forEach(h=>{const f=sph(.034,skin,.85,1.15,.8);f.position.y=-.018;h.add(f)});
+const[hipL,knL,anL]=limb(root,V(.105,-.03,0),.42,.42,LEG1,LEG2,sph(.1,legg),legg),[hipR,knR,anR]=limb(root,V(-.105,-.03,0),.42,.42,LEG1,LEG2,sph(.1,legg),legg);
+[-1,1].forEach(k=>{const g=sph(.1,legg);g.position.set(k*.085,-.035,-.075);root.add(g)});
+const toeL=G();
+[anL,anR].forEach(a=>{const s=new THREE.Mesh(new THREE.CapsuleGeometry(.04,.12,6,14),shoe);s.rotation.x=Math.PI/2;s.scale.set(1,1,.8);s.position.set(0,-.03,.045);a.add(s);
+  const so=new THREE.Mesh(new THREE.BoxGeometry(.08,.014,.21),sole);so.position.set(0,-.062,.045);a.add(so)});
+toeL.position.set(0,-.07,.14);anL.add(toeL);const toeR=G();toeR.position.set(0,-.07,.14);anR.add(toeR);
+const bodyMeshes=[];root.traverse(o=>{if(o.isMesh)bodyMeshes.push(o)});
+
+let br=0,life=0;
+function applyPose(p){
+  root.position.set(cur.plant==='feet'?.006*Math.sin(life*1.1):0,p.y??.92,p.z??0);root.rotation.set((p.rx||0)*D,(p.ry||0)*D,0);spine.rotation.set(((p.lean||0)+(cur.sine?0:br))*D,(p.twist||0)*D,0);
+  head.rotation.set(((p.nod||0)+.8*Math.sin(life*.9))*D,((p.look||0)+2.5*Math.sin(life*.55))*D,0);
+  const sh=p.sh||[4,7,0],sl=p.shL||sh,sr=p.shR||sh,el=p.el??10,hp=p.hip||0,kn=p.knee||0;
+  shL.rotation.set(-sl[0]*D,sl[2]*D,sl[1]*D);shR.rotation.set(-sr[0]*D,-sr[2]*D,-sr[1]*D);
+  elL.rotation.x=-(p.elL??el)*D;elR.rotation.x=-(p.elR??el)*D;
+  hipL.rotation.x=-(p.hipL??hp)*D;hipR.rotation.x=-(p.hipR??hp)*D;knL.rotation.x=(p.kneeL??kn)*D;knR.rotation.x=(p.kneeR??kn)*D;
+  anL.rotation.x=anR.rotation.x=(p.ank||0)*D;
+}
+
+/* equipment */
+const box=(w,h,d,mat,x,y,z,rx=0)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.rotation.x=rx;return m};
+function cushion(w,h,d,x,y,z,rx=0){const g=G();g.position.set(x,y,z);g.rotation.x=rx;const c=new THREE.Mesh(new THREE.CapsuleGeometry(h/2,w-h,6,14),pad);c.rotation.z=Math.PI/2;c.scale.z=d/h;g.add(c);return g}
+const post=(x,z,h)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(.028,.028,h,12),frameMat);m.position.set(x,h/2,z);return m};
+function bench(back){const g=G();g.add(cushion(.36,.08,.42,0,.41,.1),box(.08,.37,.08,frameMat,0,.185,.1),box(.42,.03,.52,frameMat,0,.015,.1));
+  const p=G();p.position.set(0,.44,-.17);p.rotation.x=-back*D;p.add(cushion(.32,.07,.66,0,.34,0,Math.PI/2));g.add(p);return[g];}
+const tower=(z,x=0)=>{const g=G();g.position.set(x,0,z);[post(.32,0,2.3),post(-.32,0,2.3),box(.7,.06,.06,frameMat,0,2.3,0),box(.7,.06,.06,frameMat,0,.05,0),box(.5,.6,.08,iron,0,.4,0)].forEach(o=>g.add(o));return[g]};
+const frame3=(z,h,w)=>[post(w,z,h),post(-w,z,h),box(w*2+.06,.05,.05,frameMat,0,h,z)];
+const mat=(z=0,len=1.9)=>box(.7,.012,len,matMat,0,.006,z);
+function rod(len,r,mat){const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,20),mat);m.rotation.z=Math.PI/2;return m}
+function dumbbell(o=-.025){const g=G();g.add(rod(.15,.012,steel));[-.07,.07].forEach(x=>{const p=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.045,6),iron);p.rotation.z=Math.PI/2;p.position.x=x;g.add(p)});g.position.y=o;return g}
+const hammerDB=()=>{const d=dumbbell();d.rotation.y=Math.PI/2;return d};
+function handle(o=-.025){const h=rod(.11,.018,pad);h.position.y=o;return h}
+function barMesh(len,plates){const g=G();g.add(rod(len,.014,steel));if(plates)[-1,1].forEach(k=>{const p=rod(.045,.2,plateMat);p.position.x=k*(len/2-.13);g.add(p);const c=rod(.06,.03,steel);c.position.x=k*(len/2-.08);g.add(c)});return g}
+const PD=V(0,Math.SQRT1_2,Math.SQRT1_2);
+function legPressGear(){const g=G();g.position.set(0,.55,0);g.rotation.x=-45*D;g.add(cushion(.4,.08,.42,0,-.13,.04),cushion(.36,.07,.72,0,.36,-.17,Math.PI/2));
+  return[g,box(.44,.42,.42,frameMat,0,.21,-.12),...[.32,-.32].map(x=>box(.05,.05,1.1,steel,x,.55+.707*1.05,.707*1.05,-45*D))];}
+const pullFrame=()=>{const b=rod(1.5,.018,steel);b.position.set(0,2.25,0);return[b,...frame3(-.1,2.4,.75)]};
+
+let OFF=0,PR=80;const seat={y:.515,hip:90,knee:90}, hang=s=>({sh:[0,L(165,48,s),90],el:L(5,125,s)});
+const A={
+ shoulderPress:{grip:dumbbell,gear:()=>bench(4),pose:s=>({...seat,lean:-4,sh:[0,L(90,165,s),90],el:L(95,8,s)})},
+ pulldown:{bar:{len:1.2},cable:[0,2.42,-.02],target:1.1,dist:4.6,gear:()=>[...bench(10),cushion(.42,.08,.12,0,.63,.3),post(0,-.42,2.45),box(.06,.06,.44,frameMat,0,2.45,-.2)],
+   pose:s=>({...seat,lean:-10,...hang(s)})},
+ curl:{grip:dumbbell,palm:'sup',plant:'feet',pose:s=>({sh:[L(2,12,s),8,0],el:L(5,140,s)})},
+ hammer:{grip:dumbbell,plant:'feet',pose:s=>({sh:[L(2,12,s),8,0],el:L(5,135,s)})},
+ pushdown:{grip:handle,palm:'pro',plant:'feet',cable:[0,2.15,.5],gear:()=>tower(.62),pose:s=>({lean:10,knee:6,hip:3,sh:[14,4,0],el:L(100,6,s)})},
+ seatedRow:{grip:handle,cable:[0,.45,1.15],yaw:1.25,target:.6,gear:()=>[cushion(.36,.08,.5,0,.41,0),box(.08,.37,.08,frameMat,0,.185,0),box(.42,.05,.12,frameMat,0,.45,.82,-.3),box(.4,.03,1.3,frameMat,0,.015,.5),...tower(1.2)],
+   pose:s=>({...seat,hip:85,knee:28,lean:L(8,-8,s),sh:[L(80,8,s),8,0],el:L(5,100,s)})},
+ plank:{sine:1,plant:'wrist',yaw:1.35,target:.35,dist:3.8,period:3.4,gear:()=>[mat(-.1)],palm:'pro',wristFwd:1,pose:s=>({rx:PR+.4*s,sh:[PR+.4*s,6,0],el:0,nod:-8,ank:0})},
+ goblet:{ecc:1,plant:'feet',midDB:'chest',pose:s=>({z:L(0,-.05,s),lean:L(3,22,s),hip:L(0,100,s),knee:L(0,112,s),ank:L(0,-22,s),nod:L(0,-15,s),sh:[20,2,-20],el:125})},
+ rdl:{ecc:1,grip:dumbbell,palm:'pro',plant:'feet',pose:s=>({z:L(0,-.15,s),lean:L(2,72,s),knee:L(5,18,s),hip:L(0,6,s),nod:L(0,-30,s),sh:[L(2,72,s),6,0],el:3})},
+ bss:{ecc:1,grip:dumbbell,plant:'ankL',rearBench:true,pose:s=>({lean:L(4,14,s),hipL:L(20,82,s),kneeL:L(20,92,s),hipR:L(-12,-18,s),kneeR:L(70,105,s),sh:[6,8,0],el:5})},
+ legPress:{plate:true,target:.85,gear:legPressGear,pose:s=>({y:.55+OFF,rx:-45,hip:L(135,88,s),knee:L(95,5,s)})},
+ kneeRaise:{lock:[2.25,0],target:1.4,dist:5,gear:pullFrame,pose:(s,t)=>({rx:L(0,-14,s)+2*Math.sin(2*Math.PI*t+.6),lean:L(0,10,s),nod:L(0,10,s),sh:[0,165,90],el:L(6,10,s),hip:L(4,108,s),knee:L(12,102,s),ank:L(18,38,s)})},
+ walk:{clip:1,plant:'feet',period:1.3,yaw:1.1,pose:(s,t)=>{const a=Math.sin(2*Math.PI*t),c=Math.cos(2*Math.PI*t);
+   return{lean:4,hipL:24*a,hipR:-24*a,kneeL:6+34*Math.max(0,c),kneeR:6+34*Math.max(0,-c),shL:[-22*a,6,0],shR:[22*a,6,0],el:25}}},
+ lateral:{grip:dumbbell,plant:'feet',pose:s=>({sh:[8,L(8,85,s),0],el:15})},
+ pullup:{lock:[2.25,0],target:1.35,dist:5,gear:pullFrame,rootGear:()=>[cushion(.42,.06,.4,0,-.47-OFF,-.16)],pose:s=>({hip:0,knee:90,...hang(s)})},
+ inclineDB:{grip:dumbbell,gear:()=>bench(40),pose:s=>({...seat,lean:-40,sh:[L(20,85,s),L(82,12,s),0],el:L(95,5,s)})},
+ ohDB:{midDB:'chest',dbOff:-.03,plant:'feet',palm:'neu',pose:s=>({lean:-2,nod:L(-4,2,s)}),
+   ik:s=>[true,false].map(left=>{const sg=left?1:-1,p=(left?shL:shR).position,b=-(left?handL:handR).position.y,f=L(140,8,s)*D,ey=p.y+.215,ez=p.z+.05;
+     return[spine.localToWorld(V(sg*.04,ey+b*Math.cos(f),ez-b*Math.sin(f))),V(sg*.25,1,.3).applyQuaternion(spine.getWorldQuaternion(qm)).normalize()]})},
+ chop:{bar:{len:.2},palm:'pro',plant:'feet',cable:t=>[-.85,2.1,.15],yaw:.3,gear:()=>tower(.15,-.95),
+   pose:s=>({twist:L(-45,35,s),ry:L(-12,16,s),look:L(-25,20,s),nod:L(-12,22,s),lean:L(-2,16,s),knee:L(8,24,s),hip:L(4,20,s),kneeR:L(12,26,s)}),
+   ik:s=>{const P=V(-.4,1.52,.24).lerp(V(.3,.62,.34),s);P.z+=.14*Math.sin(Math.PI*s);const tw=L(-45,35,s)*.9*D,u=V(Math.cos(tw),0,-Math.sin(tw));
+     return[[P.clone().addScaledVector(u,.05),V(.4,-1,-.2)],[P.clone().addScaledVector(u,-.05),V(-.4,-1,-.2)]]}},
+ hipThrust:{plant:'feet',plantZ:.45,thrustBench:true,yaw:1.3,target:.45,dist:3.9,palm:()=>V(0,0,-1).applyQuaternion(root.quaternion),
+   pose:s=>({rx:L(-50,-90,s),hip:L(70,0,s),knee:L(120,90,s),nod:L(12,26,s)}),
+   ik:()=>{const q=root.quaternion;return[[root.localToWorld(V(.25,-.03,.15)),V(1,-.3,-1).applyQuaternion(q).normalize()],[root.localToWorld(V(-.25,-.03,.15)),V(-1,-.3,-1).applyQuaternion(q).normalize()]]}},
+ lunge:{grip:dumbbell,plant:'feet',period:3.2,pose:(s,t)=>{const u=Math.sin(Math.PI*((2*t)%1)),f=L(10,85,u),fk=L(10,95,u),b=L(-5,-20,u),bk=L(10,100,u),left=t<.5;
+   return{lean:4,hipL:left?f:b,kneeL:left?fk:bk,hipR:left?b:f,kneeR:left?bk:fk,sh:[6,8,0],el:5}}},
+ hamCurl:{legPad:-1,gear:()=>[...bench(12),cushion(.42,.08,.14,0,.62,.32)],pose:s=>({...seat,lean:-12,knee:L(8,100,s)})},
+ crunch:{grip:handle,plant:'knee',yaw:1.5,cable:[0,2.2,.62],gear:()=>[...tower(.72),mat(-.1,.6)],
+   pose:s=>({lean:L(12,72,s),hip:L(0,18,s),knee:92,nod:L(0,25,s),sh:[L(155,140,s),14,0],el:145})},
+ bicycle:{yaw:1.2,target:.3,dist:3.6,period:1.8,gear:()=>[mat(-.25)],pose:(s,t)=>{const c=.5+.5*Math.sin(2*Math.PI*t);
+   return{y:.11,rx:-90,lean:32,twist:L(-30,30,c),nod:20,hipL:L(30,95,c),kneeL:L(20,100,c),hipR:L(95,30,c),kneeR:L(100,20,c),sh:[150,45,0],el:150}}}
+};
+const wristL=G();elL.add(wristL);let ANKY=.075;const PL={wrist:[wristL,.05],feet:null,ankL:[anL,.08],toe:[toeL,.1],knee:[knL,.07],elbow:[elL,.05]};
+
+let cur=A.lateral, extras=[], barObj=null, plateObj=null;
+const cableGeo=new THREE.BufferGeometry();cableGeo.setAttribute('position',new THREE.Float32BufferAttribute(6,3));
+const cable=new THREE.Line(cableGeo,new THREE.LineBasicMaterial({color:0x9a8f96}));cable.frustumCulled=false;
+const pulley=sph(.05,steel);
+const vL=V(),vR=V(),mid=V(),dir=V(),X=V(1,0,0),up=V(),qm=new THREE.Quaternion(),QZ=new THREE.Quaternion().setFromAxisAngle(V(0,0,1),Math.PI/2);let dbMid=null,palmL=null,palmR=null;const PN={};
+function add(o,parent=scene){parent.add(o);extras.push(o)}
+window.setAnim=key=>{
+  extras.forEach(o=>o.parent&&o.parent.remove(o));extras=[];barObj=plateObj=null;cur=A[key];curKey=key;
+  if(walkAct){cur.clip&&model?walkAct.reset().play():walkAct.stop()}
+  (cur.gear?cur.gear():[]).forEach(o=>add(o));
+  (cur.rootGear?cur.rootGear():[]).forEach(o=>add(o,root));
+  if(cur.grip){const o=palmL?0:-.025;add(cur.grip(o),palmL||handL);add(cur.grip(o),palmR||handR)}
+  dbMid=null;if(cur.midDB){dbMid=G();dbMid.add(dumbbell());add(dbMid)}
+  if(cur.bar){barObj=barMesh(cur.bar.len,cur.bar.plates);add(barObj)}
+  if(cur.cable){add(cable);add(pulley)}
+  if(cur.plate){plateObj=box(.6,.5,.04,steel,0,0,0,-45*D);add(plateObj)}
+  if(cur.legPad){const p=rod(.42,.045,pad);p.position.set(-.105,-.35,.08*cur.legPad);add(p,knL)}
+  if(cur.rearBench){frame(.3);anR.getWorldPosition(vR);const h=vR.y-.05;add(cushion(.36,.08,.4,-.05,h-.04,vR.z-.06));add(box(.08,h-.08,.08,frameMat,-.05,(h-.08)/2,vR.z-.06))}
+  if(cur.thrustBench){frame(0);spine.localToWorld(vL.set(0,.3,0));const h=vL.y-.07;add(cushion(.9,.1,.36,0,h-.05,vL.z-.04));add(box(.7,h-.1,.25,frameMat,0,(h-.1)/2,vL.z-.04));
+    const b=barMesh(1.5,true);b.position.set(0,-.03,.15);add(b,root);add(mat(.2,1))}
+  scene.traverse(o=>{if(o.isMesh&&o!==floor&&o!==ring)o.castShadow=true});
+  if(key==='plank'&&model){let best=80,be=9;for(let r=70;r<=88;r+=.25){PR=r;frame(0);toeL.getWorldPosition(vL);const e=Math.abs(vL.y-.035);if(e<be){be=e;best=r}}PR=best}
+  if(cur.yaw!=null)yaw=cur.yaw;
+  t0=performance.now();
+};
+/* two-bone arm IK on the driver: shoulder at the joint, elbow swung toward the pole, palm on the target */
+const ikS=V(),ikE=V(),ikD=V(),ikP=V(),ikF=V(),ikX=V(),ikY=V(),ikZ=V(),ikC=V(),ikM=new THREE.Matrix4(),ikQ=new THREE.Quaternion(),ikQ2=new THREE.Quaternion();
+function ikArm(left,T,pole){const sh=left?shL:shR,el=left?elL:elR,a=-el.position.y,b=-(left?handL:handR).position.y;
+  root.updateMatrixWorld(true);sh.getWorldPosition(ikS);ikD.subVectors(T,ikS);let d=ikD.length();ikD.divideScalar(d);d=Math.min(Math.max(d,.05),a+b-.002);
+  const ca=Math.min(1,Math.max(-1,(a*a+d*d-b*b)/(2*a*d))),sa=Math.sqrt(1-ca*ca),flex=Math.PI-Math.acos(Math.min(1,Math.max(-1,(a*a+b*b-d*d)/(2*a*b))));
+  ikP.copy(pole).addScaledVector(ikD,-pole.dot(ikD)).normalize();ikE.copy(ikS).addScaledVector(ikD,a*ca).addScaledVector(ikP,a*sa);
+  ikY.subVectors(ikS,ikE).normalize();ikF.copy(ikS).addScaledVector(ikD,d).sub(ikE).normalize();
+  ikZ.copy(ikF).addScaledVector(ikY,-ikF.dot(ikY));if(ikZ.lengthSq()<1e-4)ikZ.copy(ikP).negate().addScaledVector(ikY,ikP.dot(ikY));ikZ.normalize();ikX.crossVectors(ikY,ikZ);
+  ikQ.setFromRotationMatrix(ikM.makeBasis(ikX,ikY,ikZ));sh.parent.getWorldQuaternion(ikQ2);sh.quaternion.copy(ikQ2.invert().multiply(ikQ));el.rotation.set(-flex,0,0);root.updateMatrixWorld(true)}
+function frame(t){
+  const s=cur.sine?.5-.5*Math.cos(2*Math.PI*t):cur.ecc?ease(1-t):ease(t);applyPose(cur.pose(s,t));root.updateMatrixWorld(true);
+  if(cur.plant){let y;
+    if(cur.plant==='feet'){anL.getWorldPosition(vL);anR.getWorldPosition(vR);if(vR.y<vL.y)vL.copy(vR);y=ANKY}
+    else{const[o,yy]=PL[cur.plant];o.getWorldPosition(vL);y=yy}
+    root.position.y+=y-vL.y;if(cur.plantZ!=null)root.position.z+=cur.plantZ-vL.z;root.updateMatrixWorld(true)}
+  if(cur.ik){const g=cur.ik(s,t);ikArm(true,g[0][0],g[0][1]);ikArm(false,g[1][0],g[1][1]);
+    if(palmL){retarget();palmL.getWorldPosition(vL);palmR.getWorldPosition(vR);
+      ikArm(true,ikC.copy(g[0][0]).multiplyScalar(2).sub(vL),g[0][1]);ikArm(false,ikC.copy(g[1][0]).multiplyScalar(2).sub(vR),g[1][1])}}
+  retarget();
+  const hands=()=>{(palmL||handL).getWorldPosition(vL);(palmR||handR).getWorldPosition(vR);mid.addVectors(vL,vR).multiplyScalar(.5)};hands();
+  if(cur.lock){root.position.y+=cur.lock[0]-mid.y;root.position.z+=cur.lock[1]-mid.z;root.updateMatrixWorld(true);retarget();hands()}
+  if(dbMid){if(cur.midDB==='chest'){spine.getWorldQuaternion(qm);up.set(0,1,0).applyQuaternion(qm);dbMid.position.copy(mid).addScaledVector(up,cur.dbOff??-.075);dbMid.quaternion.copy(qm).multiply(QZ)}
+    else{elL.getWorldPosition(up);elR.getWorldPosition(dbMid.position);up.add(dbMid.position).multiplyScalar(.5);up.subVectors(mid,up).normalize();dbMid.position.copy(mid).addScaledVector(up,-.075);dbMid.quaternion.setFromUnitVectors(X,up)}}
+  if(barObj){barObj.position.copy(mid);dir.subVectors(vL,vR).normalize();barObj.quaternion.setFromUnitVectors(X,dir)}
+  if(cur.cable){const p=typeof cur.cable==='function'?cur.cable(t):cur.cable;pulley.position.set(p[0],p[1],p[2]);
+    cableGeo.attributes.position.array.set([mid.x,mid.y,mid.z,p[0],p[1],p[2]]);cableGeo.attributes.position.needsUpdate=true}
+  if(plateObj){anL.getWorldPosition(vL);anR.getWorldPosition(vR);plateObj.position.addVectors(vL,vR).multiplyScalar(.5).addScaledVector(PD,.08)}
+  pony.rotation.x=.35+.12*Math.sin(2*Math.PI*t*2);
+}
+
+
+/* ---------- rigged model: the procedural skeleton above becomes an invisible driver, the GLB's bones follow it ---------- */
+const ease=t=>{const e=x=>x*x*(3-2*x);return t<.32?e(t/.32):t<.42?1:t<.92?1-e((t-.42)/.5):0}; // lift ~1.1 s, squeeze, lower ~1.7 s, reset
+let model=null,mixer=null,walkAct=null,curKey=null;const B={},RQ={},RD={},PAR={},DQ={},armQ=new THREE.Quaternion();
+const ORDER=['Hips','Spine02','Spine01','Spine','neck','Head','LeftShoulder','LeftArm','LeftForeArm','LeftHand','RightShoulder','RightArm','RightForeArm','RightHand','LeftUpLeg','LeftLeg','LeftFoot','LeftToeBase','RightUpLeg','RightLeg','RightFoot','RightToeBase'];
+const CHILD={LeftArm:'LeftForeArm',LeftForeArm:'LeftHand',RightArm:'RightForeArm',RightForeArm:'RightHand',LeftUpLeg:'LeftLeg',LeftLeg:'LeftFoot',LeftFoot:'LeftToeBase',RightUpLeg:'RightLeg',RightLeg:'RightFoot',RightFoot:'RightToeBase'};
+/* which driver joints give each limb bone its direction */
+const DRV={LeftArm:[shL,elL],LeftForeArm:[elL,handL],RightArm:[shR,elR],RightForeArm:[elR,handR],LeftUpLeg:[hipL,knL],LeftLeg:[knL,anL],LeftFoot:[anL,toeL],RightUpLeg:[hipR,knR],RightLeg:[knR,anR],RightFoot:[anR,toeR]};
+const I=new THREE.Quaternion(),qa=new THREE.Quaternion(),qb=new THREE.Quaternion(),mpA=V(),mpB=V(),rd=V();
+function retarget(){
+  if(!model||cur.clip)return;
+  const Qr=root.quaternion,Qs=spine.quaternion;
+  const set=(n,q)=>(DQ[n]=DQ[n]||new THREE.Quaternion()).copy(q);
+  set('Hips',Qr);set('Spine02',qa.copy(Qr).multiply(qb.copy(I).slerp(Qs,1/3)));set('Spine01',qa.copy(Qr).multiply(qb.copy(I).slerp(Qs,2/3)));
+  set('Spine',qa.copy(Qr).multiply(Qs));set('neck',DQ.Spine);set('Head',qa.copy(DQ.Spine).multiply(head.quaternion));
+  set('LeftShoulder',DQ.Spine);set('RightShoulder',DQ.Spine);
+  for(const n of ORDER){const d=DRV[n];
+    if(d){d[0].getWorldPosition(mpA);d[1].getWorldPosition(mpB);mpB.sub(mpA).normalize();rd.copy(RD[n]).applyQuaternion(DQ[PAR[n]]);
+      set(n,qa.setFromUnitVectors(rd,mpB).multiply(DQ[PAR[n]]));if(n.endsWith('ForeArm'))twist(n)}
+    else if(!DQ[n]||n.endsWith('Hand')||n.endsWith('ToeBase')){set(n,DQ[PAR[n]]);
+      if(cur.wristFwd&&n.endsWith('Hand')){rd.set(0,1,0).applyQuaternion(qa.copy(DQ[n]).multiply(RQ[n]));mpB.set(0,0,1).applyQuaternion(root.quaternion);mpB.y=0;mpB.normalize();
+        DQ[n].premultiply(qa.setFromUnitVectors(rd,mpB))}}
+    const W=qa.copy(DQ[n]).multiply(RQ[n]),Pw=n==='Hips'?qb.copy(armQ):qb.copy(DQ[PAR[n]]).multiply(RQ[PAR[n]]);
+    B[n].quaternion.copy(Pw.invert().multiply(W));}
+  root.getWorldPosition(mpA);B.Hips.position.copy(B.Hips.parent.worldToLocal(mpA));curlFingers();model.updateMatrixWorld(true);
+}
+/* roll the forearm so the palm faces the way the exercise needs: sup = palm toward biceps, pro = away, neu = thumbs leading */
+const tw1=V(),tw2=V(),tw3=V(),qt=new THREE.Quaternion();
+function twist(n){const side=n.startsWith('Left')?'Left':'Right',info=PN[side];if(!info)return;
+  const a=mpB,mode=cur.palm||'neu';
+  tw1.copy(info.n).applyQuaternion(qt.copy(DQ[n]).multiply(RQ[side+'Hand']));
+  (side==='Left'?elL:elR).getWorldQuaternion(qt);
+  if(typeof mode==='function')tw2.copy(mode(side==='Left'));else tw2.set(mode==='neu'?(side==='Left'?-1:1):0,0,mode==='sup'?1:mode==='pro'?-1:0).applyQuaternion(qt);
+  tw1.addScaledVector(a,-tw1.dot(a));tw2.addScaledVector(a,-tw2.dot(a));if(tw1.lengthSq()<1e-6||tw2.lengthSq()<1e-6)return;
+  tw1.normalize();tw2.normalize();qt.setFromAxisAngle(a,Math.atan2(a.dot(tw3.crossVectors(tw1,tw2)),tw1.dot(tw2)));DQ[n].premultiply(qt)}
+/* grip anchor at the centre of each palm, found from the hand's own vertices */
+const GC=['getX','getY','getZ','getW'];
+/* hand rig: palm frame from the hand's own vertices, two added finger joints (knuckles, middle) re-skinned onto the finger vertices,
+   and a grip anchor in the palm crease where a handle sits when the fingers close around it */
+const FING={};
+function mkHand(side,mesh,base){
+  const bone=B[side+'Hand'],bi=mesh.skeleton.bones.indexOf(bone),g=mesh.geometry,P=g.attributes.position,SI=g.attributes.skinIndex,SW=g.attributes.skinWeight;
+  const m=new THREE.Matrix4().copy(mesh.skeleton.boneInverses[bi]).multiply(mesh.bindMatrix),v=V(),pts=[];
+  for(let i=0;i<P.count;i++){let w=0;for(const k of GC)if(SI[k](i)===bi)w+=SW[k](i);if(w>.5){v.fromBufferAttribute(P,i).applyMatrix4(m);pts.push([i,v.clone(),w])}}
+  const Lh=Math.max(...pts.map(p=>p[1].y)),c=V();pts.forEach(p=>c.add(p[1]));c.multiplyScalar(1/pts.length);
+  let xx=0,xz=0,zz=0;pts.forEach(([,p])=>{const x=p.x-c.x,z=p.z-c.z;xx+=x*x;xz+=x*z;zz+=z*z});
+  const f=.5*Math.atan2(2*xz,xx-zz),n=V(-Math.sin(f),0,Math.cos(f));
+  if(n.clone().applyQuaternion(RQ[side+'Hand']).x*(side==='Left'?-1:1)<0)n.negate();
+  const w=V(0,1,0).cross(n).normalize(),yk=.47*Lh,ym=.7*Lh;
+  /* palm band just below the knuckles: width range and palm-surface depth */
+  const band=pts.filter(([,p])=>p.y>.3*Lh&&p.y<yk),ws=band.map(([,p])=>p.dot(w)),wmin=Math.min(...ws),wmax=Math.max(...ws);
+  const crease=pts.filter(([,p])=>Math.abs(p.y-(yk-.06*Lh))<.07*Lh),cc=V();crease.forEach(([,p])=>cc.add(p));cc.multiplyScalar(1/crease.length);
+  const nmax=Math.max(...crease.map(([,p])=>p.dot(n))),wc=(wmin+wmax)/2;
+  const F1=new THREE.Bone(),F2=new THREE.Bone();F1.position.set(0,yk,0).addScaledVector(w,wc).addScaledVector(n,cc.dot(n));F2.position.set(0,ym-yk,0);bone.add(F1);F1.add(F2);
+  const sm=(a,b,x)=>{const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t)},fv=[];
+  pts.forEach(([i,p])=>{const pw=p.dot(w);if(p.y<yk-.08*Lh||pw<wmin-.02*Lh||pw>wmax+.02*Lh)return;
+    const t1=sm(yk-.06*Lh,yk+.04*Lh,p.y),t2=sm(ym-.05*Lh,ym+.04*Lh,p.y);fv.push([i,1-t1,t1*(1-t2),t1*t2])});
+  const a=new THREE.Object3D();
+  a.position.set(0,yk-.07*Lh,0).addScaledVector(w,wc).addScaledVector(n,nmax+1.3);
+  const y=n.clone().negate();a.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(w,y,V().crossVectors(w,y)));a.scale.setScalar(1/bone.getWorldScale(V()).x);
+  bone.add(a);PN[side]={n};FING[side]={F1,F2,w,fv,bi};return a}
+function rigFingers(mesh){
+  model.updateMatrixWorld(true);
+  const sk=mesh.skeleton,bones=sk.bones.slice(),inv=sk.boneInverses.map(x=>x.clone());
+  for(const side of ['Left','Right']){const F=FING[side];[F.F1,F.F2].forEach(b=>{bones.push(b);inv.push(new THREE.Matrix4().copy(b.matrixWorld).invert())});
+    F.i1=bones.length-2;F.i2=bones.length-1}
+  const SI=mesh.geometry.attributes.skinIndex,SW=mesh.geometry.attributes.skinWeight;
+  for(const side of ['Left','Right']){const F=FING[side];F.fv.forEach(([i,h,a,b])=>{SI.setXYZW(i,F.bi,F.i1,F.i2,0);SW.setXYZW(i,h,a,b,0)})}
+  SI.needsUpdate=SW.needsUpdate=true;mesh.bind(new THREE.Skeleton(bones,inv),mesh.bindMatrix);mesh.material.needsUpdate=true}
+function curlFingers(){if(!FING.Left)return;
+  const c=cur.wristFwd?[0,0]:(cur.grip||cur.bar||cur.lock||cur.thrustBench)?[78,100]:cur.midDB?[30,45]:[12,18];
+  for(const side of ['Left','Right']){const F=FING[side];F.F1.quaternion.setFromAxisAngle(F.w,c[0]*D);F.F2.quaternion.setFromAxisAngle(F.w,c[1]*D)}}
+function loadModel(){const sc=document.createElement('script');sc.src='model.js';
+  sc.onload=()=>{try{const bin=atob(window.MODEL_GLB),buf=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
+    new THREE.GLTFLoader().parse(buf.buffer,'',onModel,()=>fail())}catch(e){fail()}};
+  sc.onerror=fail;document.head.appendChild(sc)}
+const fail=()=>{$('load').textContent='Model failed to load, showing simple figure'};
+function onModel(g){
+  model=g.scene;scene.add(model);
+  model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.frustumCulled=false}if(o.isBone)B[o.name]=o});
+  model.updateMatrixWorld(true);
+  const P=n=>B[n].getWorldPosition(V());
+  for(const n of ORDER){RQ[n]=B[n].getWorldQuaternion(new THREE.Quaternion());PAR[n]=B[n].parent.name;if(CHILD[n])RD[n]=P(CHILD[n]).sub(P(n)).normalize()}
+  B.Hips.parent.getWorldQuaternion(armQ);
+  /* reshape the driver to her proportions so equipment, grips and foot planting line up with the mesh */
+  const H=P('Hips'),S2=P('Spine02'),u=P('LeftUpLeg'),k=P('LeftLeg'),f=P('LeftFoot'),a=P('LeftArm'),e=P('LeftForeArm'),w=P('LeftHand');
+  hipL.position.copy(u).sub(H);hipR.position.copy(P('RightUpLeg')).sub(H);
+  knL.position.y=knR.position.y=-u.distanceTo(k);anL.position.y=anR.position.y=-k.distanceTo(f);
+  toeL.position.copy(P('LeftToeBase')).sub(f);toeR.position.copy(P('RightToeBase')).sub(P('RightFoot'));
+  spine.position.copy(S2).sub(H);shL.position.copy(a).sub(S2);shR.position.copy(P('RightArm')).sub(S2);head.position.copy(P('Head')).sub(S2);
+  elL.position.y=elR.position.y=-a.distanceTo(e);wristL.position.y=-e.distanceTo(w);handL.position.y=handR.position.y=-(e.distanceTo(w)+.065);
+  OFF=(H.y-u.y)-.03;seat.y=.49+(H.y-u.y);ANKY=f.y;PL.ankL[1]=f.y;PL.knee[1]=.06;PL.elbow[1]=.06;
+  bodyMeshes.forEach(m=>m.visible=false);
+  let sk;model.traverse(o=>{if(o.isSkinnedMesh)sk=o});if(sk){palmL=mkHand('Left',sk);palmR=mkHand('Right',sk);rigFingers(sk)}
+  const clip=g.animations.find(c=>c.name==='walk');
+  if(clip){const tr=clip.tracks.find(t=>t.name==='Hips.position');if(tr){const v=tr.values;for(let i=0;i<v.length;i+=3){v[i]=v[0];v[i+2]=v[2]}}
+    mixer=new THREE.AnimationMixer(model);walkAct=mixer.clipAction(clip)}
+  $('load').hidden=true;setAnim(curKey);
+}
+if(THREE.GLTFLoader)loadModel();else $('load').hidden=true;
+
+let yaw=.65,drag=null;
+cv.addEventListener('pointerdown',e=>{drag=e.clientX;cv.setPointerCapture(e.pointerId)});
+cv.addEventListener('pointermove',e=>{if(drag==null)return;yaw-=(e.clientX-drag)*.01;drag=e.clientX});
+['pointerup','pointercancel'].forEach(n=>cv.addEventListener(n,()=>drag=null));
+
+function size(){const w=stage.clientWidth,h=stage.clientHeight;R.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
+new ResizeObserver(size).observe(stage);size();
+
+let playing=!matchMedia('(prefers-reduced-motion: reduce)').matches,t0=performance.now(),pauseT=.25;
+const pb=$('play');const syncBtn=()=>{pb.textContent=playing?'❚❚':'▶';pb.setAttribute('aria-label',playing?'Pause animation':'Play animation')};syncBtn();
+pb.onclick=()=>{const per=(cur.period||3.4)*1000;if(playing)pauseT=((performance.now()-t0)/per)%1;else t0=performance.now()-pauseT*per;playing=!playing;syncBtn()};
+window.__frame=t=>{if(!(cur.clip&&model))frame(t);const ty=cur.target??.92,r=cur.dist??4.2;cam.position.set(Math.sin(yaw)*r,ty+.7,Math.cos(yaw)*r);cam.lookAt(0,ty,0);R.render(scene,cam)};
+let last=performance.now();
+function loop(now){const per=(cur.period||3.4)*1000;br=1.2*Math.sin(now/560);life=now/1000;if(mixer&&cur.clip&&model)mixer.update((now-last)/1000);last=now;window.__frame(playing?((now-t0)/per)%1:pauseT);requestAnimationFrame(loop)}
+setAnim(BY[sel].key);requestAnimationFrame(loop);
+}
+</script>
